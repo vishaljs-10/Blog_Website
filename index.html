@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <title>Blog</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+  
+    header {
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      padding: 1em 0;
+    }
+  
+    main {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+  
+    #new-post {
+      margin-top: 20px;
+    }
+  
+    label, input {
+      display: block;
+      margin-bottom: 10px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    
+    textarea {
+      display: block;
+      margin-bottom: 10px;
+      width: 100%;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+  
+    button {
+      background-color: #333;
+      color: #fff;
+      padding: 10px;
+      cursor: pointer;
+    }
+
+    .post {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 20px;
+      position: relative; /* Make the container relative for absolute positioning */
+    }
+
+    .delete-button {
+      position: absolute;
+      bottom: 5px;
+      right: 5px;
+      background-color: red;
+      color: white;
+      padding: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Sarthak's Blog</h1>
+    <h2>by <a href="https://www.linkedin.com/in/sarthak-sundriyal-b622b022a/">sarthakvs</a></h2>
+  </header>
+
+  <main>
+    <section id="new-post">
+      <h2>New Post</h2>
+      <form id="post-form" action="/api/posts" method="POST">
+        <label for="title">Title:</label>
+        <input type="text" id="title" name="title" required>
+    
+        <label for="content">Content:</label>
+        <textarea id="content" name="content" rows="10" required></textarea>
+    
+        <button type="submit">Publish</button>
+      </form>
+    </section>
+
+    <section id="posts">
+      <h2>All Posts</h2>
+      <div id="posts-container">
+        <!-- Existing posts will be displayed here -->
+      </div>
+    </section>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // Function to fetch and display all posts
+      function fetchAndDisplayPosts() {
+        fetch('/api/posts')
+          .then(response => response.json())
+          .then(posts => {
+            const postsContainer = document.getElementById('posts-container');
+            postsContainer.innerHTML = ''; // Clear existing posts
+  
+            posts.forEach(post => {
+              const postElement = document.createElement('div');
+              postElement.className = 'post';
+              postElement.innerHTML = `
+                <h3>${post.title}</h3>
+                <p>${post.content}</p>
+                <button class="delete-button" data-post-id="${post._id}">Delete</button>
+              `;
+              postsContainer.appendChild(postElement);
+            });
+          })
+          .catch(error => console.error('Error fetching posts:', error));
+      }
+  
+      // Event listener for form submission
+      document.getElementById('post-form').addEventListener('submit', function (event) {
+        event.preventDefault(); // Prevent the default form submission
+      
+        const title = document.getElementById('title').value;
+        const content = document.getElementById('content').value;
+      
+        console.log('Data to be sent:', { title, content });
+      
+        fetch('/api/posts', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({title,content})
+          })          
+          .then(response => response.text())
+          .then(responseText => {
+            console.log(responseText);
+            fetchAndDisplayPosts(); // Refresh posts after creating a new one
+          })
+          .catch(error => console.error('Error creating post:', error));
+      });
+  
+      // Event listener for delete button clicks
+      document.getElementById('posts-container').addEventListener('click', function (event) {
+        if (event.target.classList.contains('delete-button')) {
+          const postId = event.target.getAttribute('data-post-id');
+          confirmDelete(postId);
+        }
+      });
+  
+      // Function to confirm deletion
+      function confirmDelete(postId) {
+        const isConfirmed = confirm('Are you sure you want to delete this post?');
+        if (isConfirmed) {
+          deletePost(postId);
+        }
+      }
+  
+      // Function to delete a post
+      function deletePost(postId) {
+        fetch(`/api/posts/${postId}`, {
+          method: 'DELETE',
+        })
+          .then(response => {
+            if (response.ok) {
+              console.log('Post deleted successfully!');
+              fetchAndDisplayPosts(); // Refresh posts after deletion
+            } else {
+              console.error('Error deleting post:', response.statusText);
+            }
+          })
+          .catch(error => console.error('Error deleting post:', error));
+      }
+  
+      // Fetch and display posts when the page loads
+      fetchAndDisplayPosts();
+    });
+  </script>
+  
+  
+</body>
+</html>
